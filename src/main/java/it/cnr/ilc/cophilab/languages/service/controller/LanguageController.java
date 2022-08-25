@@ -1,16 +1,22 @@
 package it.cnr.ilc.cophilab.languages.service.controller;
 
+import it.cnr.ilc.cophilab.commons.dsl.antlr.BaseCophiErrorListener;
+import it.cnr.ilc.cophilab.commons.dsl.antlr.BaseCophiXMLVisitor;
 import it.cnr.ilc.cophilab.languages.antlr.todoLexer;
 import it.cnr.ilc.cophilab.languages.antlr.todoParser;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.dom4j.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import it.cnr.ilc.cophilab.commons.dsl.utils.XMLHelper;
 
 @RestController
 public class LanguageController {
@@ -38,12 +44,46 @@ public class LanguageController {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         todoParser parser = new todoParser(tokens);
+        parser.addErrorListener(new BaseCophiErrorListener());
         ParseTree ast = parser.elements();
+        log.info(ast.getText());
 
         ret = ast.toStringTree();
 
         log.info(ret);
+        log.info("Errors: " + parser.getNumberOfSyntaxErrors());
+       /* BaseCophiErrorListener b = (BaseCophiErrorListener)parser.getErrorListeners().get(0);
+        b.getParseErrors().get(0).toString();*/
+        return ret;
+    }
+
+    @GetMapping(value = "/testXML", produces = MediaType.TEXT_XML_VALUE)
+    @CrossOrigin(origins = "*")
+    @ResponseBody
+    public String getXMLTest(){
+        /*String tmp = "<test><in>prova!</in></test>";
+        log.info(tmp);
+        Document doc = XMLHelper.stringToDom4j(tmp);
+        String ret = XMLHelper.documentToString(doc);
+        log.info(ret);
+        return ret;*/
+
+        todoLexer lexer = new todoLexer(CharStreams.fromString(codeStr));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+        todoParser parser = new todoParser(tokens);
+        parser.setBuildParseTree(true);
+        ParseTree ast = parser.elements();
+        log.info(ast.toStringTree());
+        String visit = ast.accept(new BaseCophiXMLVisitor<>());
+        log.info(visit);
+
+        Document doc = XMLHelper.stringToDom4j(visit);
+        String ret = XMLHelper.documentToString(doc);
+
+        log.info(ret);
 
         return ret;
+
     }
 }
