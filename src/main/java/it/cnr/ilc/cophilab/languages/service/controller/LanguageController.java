@@ -4,12 +4,14 @@ import it.cnr.ilc.cophilab.commons.dsl.antlr.BaseCophiErrorListener;
 import it.cnr.ilc.cophilab.commons.dsl.antlr.BaseCophiXMLVisitor;
 import it.cnr.ilc.cophilab.languages.antlr.todoLexer;
 import it.cnr.ilc.cophilab.languages.antlr.todoParser;
+import it.cnr.ilc.cophilab.languages.service.CodeService;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.dom4j.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,8 +24,9 @@ import it.cnr.ilc.cophilab.commons.dsl.utils.XMLHelper;
 public class LanguageController {
 
     private static final Logger log = LoggerFactory.getLogger(LanguageController.class);
-    private static final String codeStr =   "* play with antlr4\n" +
-                                            "* write a tutorial\n";
+
+    @Autowired
+    private CodeService codeService;
 
     @GetMapping(value = "/")
     @CrossOrigin(origins = "*")
@@ -40,7 +43,7 @@ public class LanguageController {
     public String getLanguageTest(){
         log.info("in test language");
         String ret;
-        todoLexer lexer = new todoLexer(CharStreams.fromString(codeStr));
+        todoLexer lexer = new todoLexer(CharStreams.fromString(codeService.retrieveCodeStr()));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         todoParser parser = new todoParser(tokens);
@@ -61,14 +64,8 @@ public class LanguageController {
     @CrossOrigin(origins = "*")
     @ResponseBody
     public String getXMLTest(){
-        /*String tmp = "<test><in>prova!</in></test>";
-        log.info(tmp);
-        Document doc = XMLHelper.stringToDom4j(tmp);
-        String ret = XMLHelper.documentToString(doc);
-        log.info(ret);
-        return ret;*/
 
-        todoLexer lexer = new todoLexer(CharStreams.fromString(codeStr));
+        todoLexer lexer = new todoLexer(CharStreams.fromString(codeService.retrieveCodeStr()));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         todoParser parser = new todoParser(tokens);
@@ -78,10 +75,13 @@ public class LanguageController {
         String visit = ast.accept(new BaseCophiXMLVisitor<>());
         log.info(visit);
 
+        String ret = visit;
         Document doc = XMLHelper.stringToDom4j(visit);
-        String ret = XMLHelper.documentToString(doc);
+        String retAlias = XMLHelper.documentToString(doc);
+
 
         log.info(ret);
+        log.info(retAlias);
 
         return ret;
 
