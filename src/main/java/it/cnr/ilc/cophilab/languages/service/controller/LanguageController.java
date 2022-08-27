@@ -2,6 +2,7 @@ package it.cnr.ilc.cophilab.languages.service.controller;
 
 import it.cnr.ilc.cophilab.commons.dsl.antlr.BaseCophiErrorListener;
 import it.cnr.ilc.cophilab.commons.dsl.antlr.BaseCophiXMLVisitor;
+import it.cnr.ilc.cophilab.commons.dsl.model.Error;
 import it.cnr.ilc.cophilab.languages.antlr.todoLexer;
 import it.cnr.ilc.cophilab.languages.antlr.todoParser;
 import it.cnr.ilc.cophilab.languages.service.CodeService;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.cnr.ilc.cophilab.commons.dsl.utils.XMLHelper;
+
+import java.util.List;
 
 @RestController
 public class LanguageController {
@@ -40,24 +43,24 @@ public class LanguageController {
     @GetMapping(value = "/test")
     @CrossOrigin(origins = "*")
     @ResponseBody
-    public String getLanguageTest(){
+    public List<Error> getLanguageTest(){
         log.info("in test language");
-        String ret;
+        List<Error> errors;
+
         todoLexer lexer = new todoLexer(CharStreams.fromString(codeService.retrieveCodeStr()));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         todoParser parser = new todoParser(tokens);
-        parser.addErrorListener(new BaseCophiErrorListener());
+        BaseCophiErrorListener errLis = new BaseCophiErrorListener();
+        parser.addErrorListener(errLis);
         ParseTree ast = parser.elements();
-        log.info(ast.getText());
+        log.info(ast.toStringTree());
 
-        ret = ast.toStringTree();
-
-        log.info(ret);
         log.info("Errors: " + parser.getNumberOfSyntaxErrors());
-       /* BaseCophiErrorListener b = (BaseCophiErrorListener)parser.getErrorListeners().get(0);
-        b.getParseErrors().get(0).toString();*/
-        return ret;
+
+        errors = errLis.getParseErrors();
+
+        return errors;
     }
 
     @GetMapping(value = "/testXML", produces = MediaType.TEXT_XML_VALUE)
